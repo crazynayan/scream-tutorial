@@ -8,7 +8,7 @@ const app = express()
 
 app.get("/screams", async(request, response) => {
   try {
-    const snapshot = await admin.firestore().collection("screams").orderBy("createAt", "desc").get()
+    const snapshot = await admin.firestore().collection("screams").orderBy("createdAt", "desc").get()
     let screams = []
     snapshot.docs.forEach(doc => screams.push({screamId: doc.id, ...doc.data()}))
     response.send(screams)
@@ -23,7 +23,7 @@ app.post("/scream",async (request, response) => {
     const newScream = {
       body: request.body.body,
       userHandle: request.body.userHandle,
-      createdAt: admin.firestore.Timestamp.fromDate(new Date())
+      createdAt: new Date().toISOString()
     }
     const doc = await admin.firestore().collection("screams").add(newScream)
     response.send({"message": `document ${doc.id} created successfully`})
@@ -33,4 +33,4 @@ app.post("/scream",async (request, response) => {
   }
 })
 
-exports.api = functions.https.onRequest(app)
+exports.api = functions.region("us-central1").https.onRequest(app)

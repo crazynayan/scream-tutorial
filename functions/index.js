@@ -16,8 +16,13 @@ const authentication = async(request, response, next) => {
   const idToken = request.headers.authorization.split(" ")[1]
   try {
     request.user = await admin.auth().verifyIdToken(idToken)
+    const data = await db.collection("users").where("userId", "==", request.user.uid).limit(1).get()
+    request.user.handle = data.docs[0].data().handle
+    console.log(request.user)
+    return next()
   } catch(error) {
-
+    console.error("Error while verifying token ", error)
+    response.status(403).send(error)
   }
 }
 
@@ -33,15 +38,17 @@ app.get("/screams", async(request, response) => {
   }
 })
 
-app.post("/scream",async (request, response) => {
+// noinspection JSCheckFunctionSignatures
+app.post("/scream", authentication , async (request, response) => {
   try {
+    // noinspection JSUnresolvedVariable
     const newScream = {
       body: request.body.body,
-      userHandle: request.body.userHandle,
+      userHandle: request.user.handle,
       createdAt: new Date().toISOString()
     }
     const doc = await db.collection("screams").add(newScream)
-    response.send({"message": `document ${doc.id} created successfully`})
+    response.send({message: `document ${doc.id} created successfully`})
   } catch (error) {
     console.error(error)
     response.status(500).send({error: "error in creating scream"})

@@ -3,14 +3,14 @@ const admin = require("firebase-admin")
 
 admin.initializeApp()
 
-// Create and Deploy Your First Cloud Functions
-// https://firebase.google.com/docs/functions/write-firebase-functions
+const express = require("express")
+const app = express()
 
-exports.getScreams = functions.https.onRequest(async (request, response) => {
+app.get("/screams", async(request, response) => {
   try {
-    const snapshot = await admin.firestore().collection("screams").get()
+    const snapshot = await admin.firestore().collection("screams").orderBy("createAt", "desc").get()
     let screams = []
-    snapshot.docs.forEach(doc => screams.push(doc.data()))
+    snapshot.docs.forEach(doc => screams.push({screamId: doc.id, ...doc.data()}))
     response.send(screams)
   } catch (error) {
     console.error(error)
@@ -18,10 +18,7 @@ exports.getScreams = functions.https.onRequest(async (request, response) => {
   }
 })
 
-exports.createScream = functions.https.onRequest(async (request, response) => {
-  if (request.method !== "POST") {
-    response.status(400).send({"error": "method not allowed"})
-  }
+app.post("/scream",async (request, response) => {
   try {
     const newScream = {
       body: request.body.body,
@@ -34,5 +31,6 @@ exports.createScream = functions.https.onRequest(async (request, response) => {
     console.error(error)
     response.status(500).send({"error": "error in creating scream"})
   }
-
 })
+
+exports.api = functions.https.onRequest(app)

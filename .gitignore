@@ -66,3 +66,6 @@ node_modules/
 
 # idea
 /.idea
+
+# secrets
+secrets.js

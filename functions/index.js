@@ -4,19 +4,22 @@ admin.initializeApp()
 const db = admin.firestore()
 const app = require("express")()
 
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDqlmp_X8oqTeLx_bKQsEcNUK7QYSr_ick",
-  authDomain: "scream-tutorial.firebaseapp.com",
-  databaseURL: "https://scream-tutorial.firebaseio.com",
-  projectId: "scream-tutorial",
-  storageBucket: "scream-tutorial.appspot.com",
-  messagingSenderId: "281483852651",
-  appId: "1:281483852651:web:1302d196eeafe4b1f7ea2e",
-  measurementId: "G-0722ZW0SV5"
-}
 const firebase = require("firebase")
+const {firebaseConfig} = require("../secrets")
 firebase.initializeApp(firebaseConfig)
+
+const authentication = async(request, response, next) => {
+  if (!request.headers || !request.headers.authorization.startsWith("Bearer ")) {
+    console.error("No token found")
+    response.status(403).send({error: "Unauthorized"})
+  }
+  const idToken = request.headers.authorization.split(" ")[1]
+  try {
+    request.user = await admin.auth().verifyIdToken(idToken)
+  } catch(error) {
+
+  }
+}
 
 app.get("/screams", async(request, response) => {
   try {
@@ -41,7 +44,7 @@ app.post("/scream",async (request, response) => {
     response.send({"message": `document ${doc.id} created successfully`})
   } catch (error) {
     console.error(error)
-    response.status(500).send({"error": "error in creating scream"})
+    response.status(500).send({error: "error in creating scream"})
   }
 })
 
@@ -78,10 +81,9 @@ app.post("/signup", async(request, response) => {
     response.status(201).send({token})
   } catch (error) {
     console.error(error)
-    if (error.code === "auth/email-already-in-use") {
-      response.status(400).send({"email": error.message})
-    }
-    response.status(500).send({"error": error.code})
+    if (error.code === "auth/email-already-in-use")
+      response.status(400).send({email: error.message})
+    response.status(500).send({error: error.code})
   }
 })
 
@@ -100,7 +102,9 @@ app.post("/login", async(request, response) => {
     response.send({token})
   } catch (error) {
     console.error(error)
-    response.status(500).send({"error": error.code})
+    if (error.code === "auth/wrong-password")
+      response.status(403).send({general: "Wrong credentials, please try again"})
+    response.status(500).send({error: error.code})
   }
 })
 

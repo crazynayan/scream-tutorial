@@ -5,7 +5,7 @@ const db = admin.firestore()
 const app = require("express")()
 
 const firebase = require("firebase")
-const {firebaseConfig} = require("../secrets")
+const {firebaseConfig} = require("./secrets")
 firebase.initializeApp(firebaseConfig)
 
 const authentication = async(request, response, next) => {

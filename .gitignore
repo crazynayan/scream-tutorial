@@ -68,4 +68,4 @@ node_modules/
 /.idea
 
 # secrets
-secrets.js
+functions/secrets.js

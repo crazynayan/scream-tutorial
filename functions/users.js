@@ -1,7 +1,8 @@
-const {db} = require("./utils")
+const {db, admin} = require("./utils")
 const firebase = require("firebase")
 const {firebaseConfig} = require("./secrets")
 firebase.initializeApp(firebaseConfig)
+const {uuid} = require("uuidv4")
 
 exports.signup = async(request, response) => {
   const newUser = {...request.body}
@@ -30,7 +31,8 @@ exports.signup = async(request, response) => {
       handle: newUser.handle,
       email: newUser.email,
       createdAt: new Date().toISOString(),
-      userId: data.user.uid
+      userId: data.user.uid,
+      imageUrl: `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/blank.jpg?alt=media&token=9f8fcdf9-9325-47c7-8b37-8807472dfe8b`
     }
     await db.doc(`/users/${newUser.handle}`).set(userCredentials)
     response.status(201).send({token})
@@ -61,4 +63,46 @@ exports.login = async(request, response) => {
       response.status(403).send({general: "Wrong credentials, please try again"})
     response.status(500).send({error: error.code})
   }
+}
+
+exports.uploadImage = async(request, response) => {
+  const BusBoy = require("busboy")
+  const busboy = new BusBoy({headers: request.headers})
+  let image = {}
+
+  // noinspection JSUnresolvedFunction
+  busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
+    // console.log(fieldname, file, filename, encoding, mimetype)
+    if (!["image/jpeg", "image/png"].includes(mimetype))
+      response.status(400).send({error: "Only jpeg and png are allowed for upload"})
+    const imageExtension = filename.split(".").pop()
+    image.filename = `${Math.round(Math.random() * 1000000000000).toString()}.${imageExtension}`
+    image.filepath = require("path").join(require("os").tmpdir(), image.filename)
+    image.mimeType = mimetype
+    image.token = uuid()
+    file.pipe(require("fs").createWriteStream(image.filepath))
+  })
+  // noinspection JSUnresolvedFunction
+  busboy.on("finish", async() => {
+    const uploadOptions = {
+      resumable: false,
+      metadata : {
+        metadata: {
+          contentType: image.mimeType,
+          firebaseStorageDownloadTokens: image.token
+        }
+      }
+    }
+    try {
+      await admin.storage().bucket().upload(image.filepath, uploadOptions)
+      image.url = `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/${image.filename}?alt=media&token=${image.token}`
+      await db.doc(`/users/${request.user.handle}`).update({imageUrl: image.url})
+      response.send({ message: "image uploaded successfully" })
+    } catch (error) {
+      console.error(error)
+      response.status(500).send({error: error.code})
+    }
+  })
+  // noinspection JSUnresolvedFunction
+  busboy.end(request.rawBody)
 }

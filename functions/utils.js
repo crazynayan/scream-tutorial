@@ -12,7 +12,6 @@ const authentication = async(request, response, next) => {
     request.user = await admin.auth().verifyIdToken(idToken)
     const data = await db.collection("users").where("userId", "==", request.user.uid).limit(1).get()
     request.user.handle = data.docs[0].data().handle
-    console.log(request.user)
     return next()
   } catch(error) {
     console.error("Error while verifying token ", error)
@@ -20,4 +19,4 @@ const authentication = async(request, response, next) => {
   }
 }
 
-module.exports = {db, authentication}
+module.exports = {db, authentication, admin}

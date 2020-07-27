@@ -80,11 +80,11 @@ exports.addUserDetails = async (request, response) => {
 }
 
 exports.getAuthenticatedUser = async (request, response) => {
-  let userDetails = {credentials: "", likes: []}
+  let userDetails = {
+    credentials: request.user.credentials,
+    likes: []
+  }
   try {
-    const doc = await db.doc(`/users/${request.user.handle}`).get()
-    if (doc.exists)
-      userDetails.credentials = doc.data()
     const docs = await db.collection("likes").where("userHandle", "==", request.user.handle).get()
     docs.forEach(doc => {
       userDetails.likes.push(doc.data())

@@ -12,11 +12,14 @@ const authentication = async(request, response, next) => {
   try {
     request.user = await admin.auth().verifyIdToken(idToken)
     const data = await db.collection("users").where("userId", "==", request.user.uid).limit(1).get()
+    if (data.docs.length !== 1 || !data.docs[0].exists)
+      response.status(403).send({error: "user profile not found"})
     request.user.handle = data.docs[0].data().handle
+    request.user.credentials = data.docs[0].data()
     return next()
   } catch(error) {
     console.error("Error while verifying token ", error)
-    response.status(403).send(error)
+    response.status(403).send({error: error.message})
   }
 }
 

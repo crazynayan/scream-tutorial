@@ -19,6 +19,14 @@ let db = {
       website: "http://user.com",
       location: "Mumbai, India"
     }
+  ],
+  comments: [
+    {
+      userHandle: "user",
+      screamId: "kd8KYnR2HX3NqDKUhmVsu1JeTD3",
+      body: "nice one mate",
+      createdAt: "2020-07-24T08:35:08.050Z"
+    }
   ]
 }
 

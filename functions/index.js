@@ -3,7 +3,7 @@ const functions = require("firebase-functions")
 const app = require("express")()
 
 const {authentication} = require("./utils")
-const {getAllScreams, postOneScream, getScream, commentOnScream} = require("./screams")
+const {getAllScreams, postOneScream, getScream, commentOnScream, likeScream, unlikeScream, deleteScream} = require("./screams")
 const {signup, login, uploadImage, addUserDetails, getAuthenticatedUser} = require("./users")
 
 // Authentication routes
@@ -27,7 +27,12 @@ app.post("/scream", authentication , postOneScream)
 app.get("/scream/:screamId", getScream)
 // noinspection JSCheckFunctionSignatures
 app.post("/scream/:screamId/comment", authentication , commentOnScream)
-// TODO likeScream, unlikeScream, deleteScream
+// noinspection JSCheckFunctionSignatures
+app.post("/scream/:screamId/like", authentication , likeScream)
+// noinspection JSCheckFunctionSignatures
+app.post("/scream/:screamId/unlike", authentication , unlikeScream)
+// noinspection JSCheckFunctionSignatures
+app.delete("/scream/:screamId", authentication , deleteScream)
 
 
 exports.api = functions.region("us-central1").https.onRequest(app)

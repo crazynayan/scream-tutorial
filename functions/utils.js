@@ -1,3 +1,4 @@
+const {firebaseConfig} = require("./secrets")
 const admin = require("firebase-admin")
 admin.initializeApp()
 const db = admin.firestore()
@@ -19,4 +20,11 @@ const authentication = async(request, response, next) => {
   }
 }
 
-module.exports = {db, authentication, admin}
+const getImageUrl = (filename, token = "") => {
+  let tokenParameter = token
+  if (token !== "")
+    tokenParameter = `&token=${token}`
+  return `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/${filename}?alt=media${tokenParameter}`
+}
+
+module.exports = {db, authentication, admin, getImageUrl}

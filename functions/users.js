@@ -1,10 +1,10 @@
-const {db, admin} = require("./utils")
+const {db, admin, getImageUrl} = require("./utils")
 const firebase = require("firebase")
 const {firebaseConfig} = require("./secrets")
 firebase.initializeApp(firebaseConfig)
 const {uuid} = require("uuidv4")
 
-exports.signup = async(request, response) => {
+exports.signup = async (request, response) => {
   const newUser = {...request.body}
   const emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
   let errors = {}
@@ -32,7 +32,7 @@ exports.signup = async(request, response) => {
       email: newUser.email,
       createdAt: new Date().toISOString(),
       userId: data.user.uid,
-      imageUrl: `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/blank.jpg?alt=media&token=9f8fcdf9-9325-47c7-8b37-8807472dfe8b`
+      imageUrl: getImageUrl("blank.jpg", "f8fcdf9-9325-47c7-8b37-8807472dfe8b")
     }
     await db.doc(`/users/${newUser.handle}`).set(userCredentials)
     response.status(201).send({token})
@@ -44,7 +44,7 @@ exports.signup = async(request, response) => {
   }
 }
 
-exports.login = async(request, response) => {
+exports.login = async (request, response) => {
   const user = {...request.body}
   let errors = {}
   if (user.email.trim() === "")
@@ -65,14 +65,45 @@ exports.login = async(request, response) => {
   }
 }
 
-exports.uploadImage = async(request, response) => {
+exports.addUserDetails = async (request, response) => {
+  let userDetails = {...request.body}
+  if (userDetails.website && !userDetails.website.startsWith("http")) {
+    userDetails.website = `http://${userDetails.website}`
+  }
+  try {
+    await db.doc(`/users/${request.user.handle}`).update(userDetails)
+    response.send({message: "user details updated successfully"})
+  } catch (error) {
+    console.error(error)
+    response.status(500).send({error: error.code})
+  }
+}
+
+exports.getAuthenticatedUser = async (request, response) => {
+  let userDetails = {credentials: "", likes: []}
+  try {
+    const doc = await db.doc(`/users/${request.user.handle}`).get()
+    if (doc.exists)
+      userDetails.credentials = doc.data()
+    const docs = await db.collection("likes").where("userHandle", "==", request.user.handle).get()
+    docs.forEach(doc => {
+      userDetails.likes.push(doc.data())
+    })
+    response.send(userDetails)
+  } catch (error) {
+    console.error(error)
+    response.status(500).send({error: error.code})
+  }
+
+}
+
+exports.uploadImage = async (request, response) => {
   const BusBoy = require("busboy")
   const busboy = new BusBoy({headers: request.headers})
   let image = {}
 
   // noinspection JSUnresolvedFunction
   busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
-    // console.log(fieldname, file, filename, encoding, mimetype)
     if (!["image/jpeg", "image/png"].includes(mimetype))
       response.status(400).send({error: "Only jpeg and png are allowed for upload"})
     const imageExtension = filename.split(".").pop()
@@ -83,10 +114,10 @@ exports.uploadImage = async(request, response) => {
     file.pipe(require("fs").createWriteStream(image.filepath))
   })
   // noinspection JSUnresolvedFunction
-  busboy.on("finish", async() => {
+  busboy.on("finish", async () => {
     const uploadOptions = {
       resumable: false,
-      metadata : {
+      metadata: {
         metadata: {
           contentType: image.mimeType,
           firebaseStorageDownloadTokens: image.token
@@ -95,9 +126,9 @@ exports.uploadImage = async(request, response) => {
     }
     try {
       await admin.storage().bucket().upload(image.filepath, uploadOptions)
-      image.url = `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/${image.filename}?alt=media&token=${image.token}`
+      image.url = getImageUrl(image.filename, image.token)
       await db.doc(`/users/${request.user.handle}`).update({imageUrl: image.url})
-      response.send({ message: "image uploaded successfully" })
+      response.send({message: "image uploaded successfully"})
     } catch (error) {
       console.error(error)
       response.status(500).send({error: error.code})

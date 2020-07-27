@@ -10,6 +10,7 @@ const {signup, login, uploadImage, addUserDetails, getAuthenticatedUser} = requi
 app.post("/signup", signup)
 app.post("/login", login)
 
+
 // User routes
 // noinspection JSCheckFunctionSignatures
 app.post("/user/image", authentication, uploadImage)
@@ -24,9 +25,9 @@ app.get("/screams", getAllScreams)
 // noinspection JSCheckFunctionSignatures
 app.post("/scream", authentication , postOneScream)
 // TODO getScream, commentOnScream, deleteScream, likeScream,
-app.get("/screams/:screamId", getScream)
+app.get("/scream/:screamId", getScream)
 // noinspection JSCheckFunctionSignatures
-app.post("/scream/:screamId/post", authentication , commentOnScream)
+app.post("/scream/:screamId/comment", authentication , commentOnScream)
 
 
 exports.api = functions.region("us-central1").https.onRequest(app)

@@ -1,4 +1,4 @@
-let db = {
+const db = {
   screams: [
     {
       userHandle: "user",

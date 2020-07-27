@@ -4,6 +4,7 @@ const db = {
       userHandle: "user",
       body: "this is a scream",
       createdAt: "2020-07-24T08:35:08.050Z",
+      imageUrl: "https://firebasestorage.googleapis.com/v0/b/scream-tutorial.appspot.com/o/blank.jpg?alt=media&token=f8fcdf9-9325-47c7-8b37-8807472dfe8b",
       likeCount: 5,
       commentCount: 2
     }
@@ -26,6 +27,12 @@ const db = {
       screamId: "kd8KYnR2HX3NqDKUhmVsu1JeTD3",
       body: "nice one mate",
       createdAt: "2020-07-24T08:35:08.050Z"
+    }
+  ],
+  likes: [
+    {
+      userHandle: "user",
+      screamId: "kd8KYnR2HX3NqDKUhmVsu1JeTD3",
     }
   ]
 }

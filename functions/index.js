@@ -24,10 +24,10 @@ app.get("/user", authentication, getAuthenticatedUser)
 app.get("/screams", getAllScreams)
 // noinspection JSCheckFunctionSignatures
 app.post("/scream", authentication , postOneScream)
-// TODO getScream, commentOnScream, deleteScream, likeScream,
 app.get("/scream/:screamId", getScream)
 // noinspection JSCheckFunctionSignatures
 app.post("/scream/:screamId/comment", authentication , commentOnScream)
+// TODO likeScream, unlikeScream, deleteScream
 
 
 exports.api = functions.region("us-central1").https.onRequest(app)

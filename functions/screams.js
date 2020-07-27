@@ -14,17 +14,18 @@ exports.getAllScreams = async(request, response) => {
 
 exports.postOneScream = async (request, response) => {
   try {
-    // noinspection JSUnresolvedVariable
-    const newScream = {
-      body: request.body.body,
-      userHandle: request.user.handle,
-      createdAt: new Date().toISOString()
-    }
+    const newScream = {...request.body}
+    newScream.userHandle = request.user.handle
+    newScream.createdAt = new Date().toISOString()
+    newScream.imageUrl = request.user.credentials.imageUrl
+    newScream.likeCount = 0
+    newScream.commentCount = 0
     const doc = await db.collection("screams").add(newScream)
-    response.send({message: `document ${doc.id} created successfully`})
+    newScream.screamId = doc.id
+    response.status(201).send(newScream)
   } catch (error) {
     console.error(error)
-    response.status(500).send({error: "error in creating scream"})
+    response.status(500).send({error: error.code})
   }
 }
 
@@ -33,7 +34,7 @@ exports.getScream = async(request, response) => {
   try {
     const doc = await db.doc(`/screams/${request.params.screamId}`).get()
     if (!doc.exists)
-      response.status(404).send({error: "scream not found"})
+      return response.status(404).send({error: "scream not found"})
     screamData = doc.data()
     screamData.screamId = doc.id
     const docs = await db.collection("/comments").where("screamId", "==", doc.id).orderBy("createdAt", "desc").get()
@@ -51,17 +52,17 @@ exports.commentOnScream = async(request, response) => {
   try {
     const doc = await db.doc(`/screams/${request.params.screamId}`).get()
     if (!doc.exists)
-      response.status(404).send({error: "scream not found"})
+      return response.status(404).send({error: "scream not found"})
     const newComment = {...request.body}
     newComment.createdAt = new Date().toISOString()
     newComment.screamId = request.params.screamId
     newComment.userHandle = request.user.handle
     newComment.imageUrl = request.user.credentials.imageUrl
     await db.collection("comments").add(newComment)
+    await db.doc(`/screams/${request.params.screamId}`).update({commentCount: doc.data().commentCount + 1})
     response.status(201).send(newComment)
   } catch (error) {
     console.error(error)
     response.status(500).send({error: error.code})
   }
-
 }

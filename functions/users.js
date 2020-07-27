@@ -19,12 +19,11 @@ exports.signup = async (request, response) => {
   if (newUser.handle.trim() === "")
     errors.handle = "Must not be empty"
   if (Object.keys(errors).length > 0)
-    response.status(400).send(errors)
+    return response.status(400).send(errors)
   try {
     const doc = await db.doc(`/users/${newUser.handle}`).get()
-    if (doc.exists) {
-      response.status(400).send({handle: "this handle is already taken"})
-    }
+    if (doc.exists)
+      return response.status(400).send({handle: "this handle is already taken"})
     const data = await firebase.auth().createUserWithEmailAndPassword(newUser.email, newUser.password)
     const token = await data.user.getIdToken()
     const userCredentials = {
@@ -32,14 +31,14 @@ exports.signup = async (request, response) => {
       email: newUser.email,
       createdAt: new Date().toISOString(),
       userId: data.user.uid,
-      imageUrl: getImageUrl("blank.jpg", "f8fcdf9-9325-47c7-8b37-8807472dfe8b")
+      imageUrl: getImageUrl("blank.jpg", "9f8fcdf9-9325-47c7-8b37-8807472dfe8b")
     }
     await db.doc(`/users/${newUser.handle}`).set(userCredentials)
     response.status(201).send({token})
   } catch (error) {
     console.error(error)
     if (error.code === "auth/email-already-in-use")
-      response.status(400).send({email: error.message})
+      return response.status(400).send({email: error.message})
     response.status(500).send({error: error.code})
   }
 }
@@ -52,7 +51,7 @@ exports.login = async (request, response) => {
   if (user.password.trim() === "")
     errors.password = "Must not be empty"
   if (Object.keys(errors).length > 0)
-    response.send({errors})
+    return response.send(errors)
   try {
     const data = await firebase.auth().signInWithEmailAndPassword(user.email, user.password)
     const token = await data.user.getIdToken()
@@ -60,14 +59,14 @@ exports.login = async (request, response) => {
   } catch (error) {
     console.error(error)
     if (error.code === "auth/wrong-password")
-      response.status(403).send({general: "Wrong credentials, please try again"})
+      return response.status(403).send({general: "Wrong credentials, please try again"})
     response.status(500).send({error: error.code})
   }
 }
 
 exports.addUserDetails = async (request, response) => {
   let userDetails = {...request.body}
-  if (userDetails.website && !userDetails.website.startsWith("http")) {
+  if (!userDetails.website.startsWith("http")) {
     userDetails.website = `http://${userDetails.website}`
   }
   try {
@@ -94,7 +93,6 @@ exports.getAuthenticatedUser = async (request, response) => {
     console.error(error)
     response.status(500).send({error: error.code})
   }
-
 }
 
 exports.uploadImage = async (request, response) => {

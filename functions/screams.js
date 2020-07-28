@@ -51,6 +51,8 @@ exports.getScream = async (request, response) => {
 }
 
 exports.commentOnScream = async (request, response) => {
+  if (request.body.body.trim() === "")
+    return response.status(400).send({comment: "must not be empty"})
   try {
     const screamDoc = await db.doc(`/screams/${request.params.screamId}`).get()
     if (!screamDoc.exists)
@@ -116,16 +118,32 @@ exports.deleteScream = async (request, response) => {
       return response.status(404).send({error: "scream not found"})
     if (screamDoc.data().userHandle !== request.user.handle)
       return response.status(403).send({error: "unauthorized"})
-    const commentDocs = await db.collection("comments").where("screamId", "==", request.params.screamId).get()
-    const likeDocs = await db.collection("likes").where("screamId", "==", request.params.screamId).get()
-    const promises = []
-    promises.push(screamDoc.ref.delete())
-    commentDocs.forEach(doc => promises.push(doc.ref.delete()))
-    likeDocs.forEach(doc => promises.push(doc.ref.delete()))
-    await Promise.all(promises)
+    await screamDoc.ref.delete()
     response.send({ message: "scream deleted successfully" })
   } catch (error) {
     console.error(error)
     response.status(500).send({error: error.code})
+  }
+}
+
+
+exports.onDelete = async(screamId) => {
+  const batch = db.batch()
+  try {
+    const commentCol = await db.collection("comments").where("screamId", "==", screamId).get()
+    commentCol.docs.forEach(doc => {
+      batch.delete(db.doc(`/comments/${doc.id}`))
+    })
+    const likeCol = await db.collection("likes").where("screamId", "==", screamId).get()
+    likeCol.docs.forEach(doc => {
+      batch.delete(db.doc(`/likes/${doc.id}`))
+    })
+    const notificationCol = await db.collection("notifications").where("screamId", "==", screamId).get()
+    notificationCol.docs.forEach(doc => {
+      batch.delete(db.doc(`/notifications/${doc.id}`))
+    })
+    await batch.commit()
+  } catch(error) {
+    console.error(error)
   }
 }

@@ -38,7 +38,7 @@ exports.signup = async (request, response) => {
     console.error(error)
     if (error.code === "auth/email-already-in-use")
       return response.status(400).send({email: error.message})
-    response.status(500).send({error: error.code})
+    response.status(500).send({general: "something went wrong, please try again"})
   }
 }
 
@@ -57,9 +57,7 @@ exports.login = async (request, response) => {
     response.send({token})
   } catch (error) {
     console.error(error)
-    if (error.code === "auth/wrong-password")
-      return response.status(403).send({general: "Wrong credentials, please try again"})
-    response.status(500).send({error: error.code})
+    response.status(403).send({general: "Wrong credentials, please try again"})
   }
 }
 
@@ -167,4 +165,23 @@ exports.uploadImage = async (request, response) => {
   })
   // noinspection JSUnresolvedFunction
   busboy.end(request.rawBody)
+}
+
+exports.onImageChange = async(userChange) => {
+  if (userChange.before.data().imageUrl === userChange.after.data().imageUrl)
+    return
+  const batch = db.batch()
+  try {
+    const screamCol = await db.collection("screams").where("userHandle", "==", userChange.before.data().handle).get()
+    screamCol.docs.forEach(doc => {
+      batch.update(db.doc(`/screams/${doc.id}`), {imageUrl: userChange.after.data().imageUrl})
+    })
+    const commentCol = await db.collection("comments").where("userHandle", "==", userChange.before.data().handle).get()
+    commentCol.docs.forEach(doc => {
+      batch.update(db.doc(`/comments/${doc.id}`), {imageUrl: userChange.after.data().imageUrl})
+    })
+    await batch.commit()
+  } catch(error) {
+    console.error(error)
+  }
 }

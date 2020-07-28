@@ -23,6 +23,8 @@ exports.createOnLike = async(likeDoc) => {
       console.error({error: "scream not found for creating notification on like"})
       return
     }
+    if (screamDoc.data().userHandle === likeDoc.data().userHandle)
+      return
     await db.doc(`/notifications/${likeDoc.id}`).set({
       recipient: screamDoc.data().userHandle,
       sender: likeDoc.data().userHandle,
@@ -52,6 +54,8 @@ exports.createOnComment = async (commentDoc) => {
       console.error({error: "scream not found for creating notification on comment"})
       return
     }
+    if (screamDoc.data().userHandle === commentDoc.data().userHandle)
+      return
     await db.doc(`/notifications/${commentDoc.id}`).set({
       recipient: screamDoc.data().userHandle,
       sender: commentDoc.data().userHandle,

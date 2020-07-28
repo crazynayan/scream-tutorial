@@ -34,6 +34,16 @@ const db = {
       userHandle: "user",
       screamId: "kd8KYnR2HX3NqDKUhmVsu1JeTD3",
     }
+  ],
+  notifications: [
+    {
+      recipient: "user",
+      sender: "john",
+      read: "true | false",
+      screamId: "kd8KYnR2HX3NqDKUhmVsu1JeTD3",
+      type: "like | comment",
+      createdAt: "2020-07-24T08:35:08.050Z"
+    }
   ]
 }
 
@@ -57,6 +67,17 @@ const userDetails ={
     {
       userHandle: "user",
       screamId: "3I7OUWfW23cVZGbHH2XO"
+    }
+  ],
+  notifications: [
+    {
+      recipient: "user",
+      sender: "john",
+      read: "true | false",
+      screamId: "kd8KYnR2HX3NqDKUhmVsu1JeTD3",
+      type: "like | comment",
+      createdAt: "2020-07-24T08:35:08.050Z",
+      notificationId: "X97O5WfWWucVZGbL32pa"
     }
   ]
 }

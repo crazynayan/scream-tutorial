@@ -26,14 +26,13 @@ exports.signup = async (request, response) => {
       return response.status(400).send({handle: "this handle is already taken"})
     const data = await firebase.auth().createUserWithEmailAndPassword(newUser.email, newUser.password)
     const token = await data.user.getIdToken()
-    const userCredentials = {
+    await db.doc(`/users/${newUser.handle}`).set({
       handle: newUser.handle,
       email: newUser.email,
       createdAt: new Date().toISOString(),
       userId: data.user.uid,
       imageUrl: getImageUrl("blank.jpg", "9f8fcdf9-9325-47c7-8b37-8807472dfe8b")
-    }
-    await db.doc(`/users/${newUser.handle}`).set(userCredentials)
+    })
     response.status(201).send({token})
   } catch (error) {
     console.error(error)
@@ -81,12 +80,46 @@ exports.addUserDetails = async (request, response) => {
 exports.getAuthenticatedUser = async (request, response) => {
   let userDetails = {
     credentials: request.user.credentials,
-    likes: []
+    likes: [],
+    notifications: []
   }
   try {
-    const docs = await db.collection("likes").where("userHandle", "==", request.user.handle).get()
-    docs.forEach(doc => {
+    const likeDocs = await db.collection("likes").where("userHandle", "==", request.user.handle).get()
+    likeDocs.forEach(doc => {
       userDetails.likes.push(doc.data())
+    })
+    const notificationDocs = await db.collection("notifications")
+      .where("recipient", "==", request.user.handle)
+      .orderBy("createdAt", "desc").limit(10).get()
+    notificationDocs.forEach(doc => {
+      const notification = {...doc.data()}
+      notification.notificationId = doc.id
+      userDetails.notifications.push(notification)
+    })
+    response.send(userDetails)
+  } catch (error) {
+    console.error(error)
+    response.status(500).send({error: error.code})
+  }
+}
+
+exports.getUserDetails = async (request, response) => {
+  let userDetails = {
+    user: {},
+    screams: []
+  }
+  try {
+    const userDoc = await db.doc(`/users/${request.params.handle}`).get()
+    if (!userDoc.exists)
+      return response.status(404).send({error: "user not found"})
+    userDetails.user = userDoc.data()
+    const screamCol = await db.collection("screams")
+      .where("userHandle", "==", request.params.handle)
+      .orderBy("createdAt", "desc").get()
+    screamCol.docs.forEach(doc => {
+      const scream = doc.data()
+      scream.screamId = doc.id
+      userDetails.screams.push(scream)
     })
     response.send(userDetails)
   } catch (error) {

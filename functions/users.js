@@ -9,15 +9,15 @@ exports.signup = async (request, response) => {
   const emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
   let errors = {}
   if (newUser.email.trim() === "")
-    errors.email = "Must not be empty"
+    errors.email = "must not be empty"
   else if (!newUser.email.match(emailRegEx))
-    errors.email = "Must be a valid email address"
+    errors.email = "must be a valid email address"
   if (newUser.password.trim() === "")
-    errors.password = "Must not be empty"
+    errors.password = "must not be empty"
   if (newUser.password !== newUser.confirmPassword)
     errors.confirmPassword = "Passwords must match"
   if (newUser.handle.trim() === "")
-    errors.handle = "Must not be empty"
+    errors.handle = "must not be empty"
   if (Object.keys(errors).length > 0)
     return response.status(400).send(errors)
   try {
@@ -38,7 +38,7 @@ exports.signup = async (request, response) => {
     console.error(error)
     if (error.code === "auth/email-already-in-use")
       return response.status(400).send({email: error.message})
-    response.status(500).send({general: "something went wrong, please try again"})
+    response.status(500).send({general: "Something went wrong, please try again"})
   }
 }
 
@@ -46,11 +46,11 @@ exports.login = async (request, response) => {
   const user = {...request.body}
   let errors = {}
   if (user.email.trim() === "")
-    errors.email = "Must not be empty"
+    errors.email = "must not be empty"
   if (user.password.trim() === "")
-    errors.password = "Must not be empty"
+    errors.password = "must not be empty"
   if (Object.keys(errors).length > 0)
-    return response.send(errors)
+    return response.status(400).send(errors)
   try {
     const data = await firebase.auth().signInWithEmailAndPassword(user.email, user.password)
     const token = await data.user.getIdToken()
@@ -86,10 +86,10 @@ exports.getAuthenticatedUser = async (request, response) => {
     likeDocs.forEach(doc => {
       userDetails.likes.push(doc.data())
     })
-    const notificationDocs = await db.collection("notifications")
+    const notificationCol = await db.collection("notifications")
       .where("recipient", "==", request.user.handle)
       .orderBy("createdAt", "desc").limit(10).get()
-    notificationDocs.forEach(doc => {
+    notificationCol.docs.forEach(doc => {
       const notification = {...doc.data()}
       notification.notificationId = doc.id
       userDetails.notifications.push(notification)

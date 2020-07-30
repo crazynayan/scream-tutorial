@@ -33,7 +33,7 @@ exports.signup = async (request, response) => {
       userId: data.user.uid,
       imageUrl: getImageUrl("blank.jpg", "9f8fcdf9-9325-47c7-8b37-8807472dfe8b")
     })
-    response.status(201).send({token})
+    response.send({token})
   } catch (error) {
     console.error(error)
     if (error.code === "auth/email-already-in-use")

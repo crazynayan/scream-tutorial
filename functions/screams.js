@@ -22,7 +22,7 @@ exports.postOneScream = async (request, response) => {
     newScream.commentCount = 0
     const doc = await db.collection("screams").add(newScream)
     newScream.screamId = doc.id
-    response.status(201).send(newScream)
+    response.send(newScream)
   } catch (error) {
     console.error(error)
     response.status(500).send({error: error.code})
@@ -64,7 +64,7 @@ exports.commentOnScream = async (request, response) => {
     newComment.imageUrl = request.user.credentials.imageUrl
     await screamDoc.ref.update({commentCount: screamDoc.data().commentCount + 1})
     await db.collection("comments").add(newComment)
-    response.status(201).send(newComment)
+    response.send(newComment)
   } catch (error) {
     console.error(error)
     response.status(500).send({error: error.code})

@@ -13,6 +13,8 @@ exports.getAllScreams = async (request, response) => {
 }
 
 exports.postOneScream = async (request, response) => {
+  if (request.body.body.trim() === "")
+    return response.status(400).send({body: "must not be empty"})
   try {
     const newScream = {...request.body}
     newScream.userHandle = request.user.handle

@@ -2,6 +2,9 @@ const functions = require("firebase-functions")
 
 const app = require("express")()
 
+const cors = require("cors")
+app.use(cors())
+
 const {authentication} = require("./utils")
 const {getAllScreams, postOneScream, getScream, commentOnScream, likeScream, unlikeScream, deleteScream, onDelete} = require("./screams")
 const {signup, login, uploadImage, addUserDetails, getAuthenticatedUser, getUserDetails, onImageChange} = require("./users")

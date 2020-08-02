@@ -4,7 +4,7 @@ const {db} = require("./utils")
 exports.markNotificationsRead = async (request, response) => {
   let batch = db.batch()
   request.body.forEach(notificationId => {
-    batch.update(db.doc(`/notifications/${notificationId}`), {required: true})
+    batch.update(db.doc(`/notifications/${notificationId}`), {read: true})
   })
   try {
     await batch.commit()

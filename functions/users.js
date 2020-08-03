@@ -3,10 +3,10 @@ const firebase = require("firebase")
 const {firebaseConfig} = require("./secrets")
 firebase.initializeApp(firebaseConfig)
 const {uuid} = require("uuidv4")
+const emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 
 exports.signup = async (request, response) => {
   const newUser = {...request.body}
-  const emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
   let errors = {}
   if (newUser.email.trim() === "")
     errors.email = "must not be empty"
@@ -42,23 +42,30 @@ exports.signup = async (request, response) => {
   }
 }
 
-exports.login = async (request, response) => {
+exports.login = (request, response) => {
   const user = {...request.body}
   let errors = {}
-  if (user.email.trim() === "")
-    errors.email = "must not be empty"
-  if (user.password.trim() === "")
-    errors.password = "must not be empty"
+  if (user) {
+    if (!user.email || user.email.trim() === "")
+      errors.email = "must not be empty"
+    else if (!user.email.match(emailRegEx))
+      errors.email = "must be a valid email address with the @ sign"
+    if (!user.password || user.password.trim() === "")
+      errors.password = "must not be empty"
+  } else {
+    errors.general = "invalid request format"
+  }
   if (Object.keys(errors).length > 0)
     return response.status(400).send(errors)
-  try {
-    const data = await firebase.auth().signInWithEmailAndPassword(user.email, user.password)
-    const token = await data.user.getIdToken()
-    response.send({token})
-  } catch (error) {
-    console.error(error)
-    response.status(403).send({general: "Wrong credentials, please try again"})
-  }
+  return (async () => {
+    try {
+      const data = await firebase.auth().signInWithEmailAndPassword(user.email, user.password)
+      const token = await data.user.getIdToken()
+      return response.send({token})
+    } catch (error) {
+      return response.status(403).send({general: "Wrong credentials, please try again"})
+    }
+  })()
 }
 
 exports.addUserDetails = async (request, response) => {
@@ -167,7 +174,7 @@ exports.uploadImage = async (request, response) => {
   busboy.end(request.rawBody)
 }
 
-exports.onImageChange = async(userChange) => {
+exports.onImageChange = async (userChange) => {
   if (userChange.before.data().imageUrl === userChange.after.data().imageUrl)
     return
   const batch = db.batch()
@@ -181,7 +188,7 @@ exports.onImageChange = async(userChange) => {
       batch.update(db.doc(`/comments/${doc.id}`), {imageUrl: userChange.after.data().imageUrl})
     })
     await batch.commit()
-  } catch(error) {
+  } catch (error) {
     console.error(error)
   }
 }

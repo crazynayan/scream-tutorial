@@ -8,27 +8,29 @@ exports.getAllScreams = async (request, response) => {
     response.send(screams)
   } catch (error) {
     console.error(error)
-    response.status(500).send(error)
+    response.status(500).send(error.code)
   }
 }
 
-exports.postOneScream = async (request, response) => {
-  if (request.body.body.trim() === "")
+exports.postOneScream = (request, response) => {
+  const newScream = {...request.body}
+  if (!newScream.body || newScream.body.trim() === "")
     return response.status(400).send({body: "must not be empty"})
-  try {
-    const newScream = {...request.body}
-    newScream.userHandle = request.user.handle
-    newScream.createdAt = new Date().toISOString()
-    newScream.imageUrl = request.user.credentials.imageUrl
-    newScream.likeCount = 0
-    newScream.commentCount = 0
-    const doc = await db.collection("screams").add(newScream)
-    newScream.screamId = doc.id
-    response.send(newScream)
-  } catch (error) {
-    console.error(error)
-    response.status(500).send({error: error.code})
-  }
+  newScream.userHandle = request.user.handle
+  newScream.createdAt = new Date().toISOString()
+  newScream.imageUrl = request.user.credentials.imageUrl
+  newScream.likeCount = 0
+  newScream.commentCount = 0;
+  (async() => {
+    try {
+      const doc = await db.collection("screams").add(newScream)
+      newScream.screamId = doc.id
+      return response.send(newScream)
+    } catch (error) {
+      console.error(error)
+      return response.status(500).send({error: error.code})
+    }
+  })()
 }
 
 exports.getScream = async (request, response) => {
@@ -52,25 +54,27 @@ exports.getScream = async (request, response) => {
 
 }
 
-exports.commentOnScream = async (request, response) => {
-  if (request.body.body.trim() === "")
-    return response.status(400).send({comment: "must not be empty"})
-  try {
-    const screamDoc = await db.doc(`/screams/${request.params.screamId}`).get()
-    if (!screamDoc.exists)
-      return response.status(404).send({error: "scream not found"})
-    const newComment = {...request.body}
-    newComment.createdAt = new Date().toISOString()
-    newComment.screamId = request.params.screamId
-    newComment.userHandle = request.user.handle
-    newComment.imageUrl = request.user.credentials.imageUrl
-    await screamDoc.ref.update({commentCount: screamDoc.data().commentCount + 1})
-    await db.collection("comments").add(newComment)
-    response.send(newComment)
-  } catch (error) {
-    console.error(error)
-    response.status(500).send({error: error.code})
-  }
+exports.commentOnScream = (request, response) => {
+  const newComment = {...request.body}
+  if (!newComment.body || newComment.body.trim() === "")
+    return response.status(400).send({body: "must not be empty"})
+  newComment.createdAt = new Date().toISOString()
+  newComment.screamId = request.params.screamId
+  newComment.userHandle = request.user.handle
+  newComment.imageUrl = request.user.credentials.imageUrl;
+  (async() => {
+    try {
+      const screamDoc = await db.doc(`/screams/${request.params.screamId}`).get()
+      if (!screamDoc.exists)
+        return response.status(404).send({body: "scream not found"})
+      await screamDoc.ref.update({commentCount: screamDoc.data().commentCount + 1})
+      await db.collection("comments").add(newComment)
+      response.send(newComment)
+    } catch (error) {
+      console.error(error)
+      response.status(500).send({body: error.code})
+    }
+  })()
 }
 
 exports.likeScream = async (request, response) => {
